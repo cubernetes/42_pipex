@@ -6,7 +6,7 @@
 /*   By: tosuman <timo42@proton.me>                 +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/12/05 02:14:40 by tosuman           #+#    #+#             */
-/*   Updated: 2023/12/06 11:39:45 by tosuman          ###   ########.fr       */
+/*   Updated: 2023/12/06 11:47:30 by tosuman          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -42,6 +42,7 @@ void	help_and_exit(int argc, char **argv, int fd)
 {
 	char	*program;
 
+	(void)argc;
 	if (!argv || !argv[0])
 		program = "pipex";
 	else
@@ -71,7 +72,7 @@ char	*create_heredoc_file(t_pipeline *pipeline)
 {
 	char	*line;
 	int		heredoc_fd;
-	int		heredoc_sep_len;
+	size_t	heredoc_sep_len;
 
 	heredoc_fd = open(HEREDOC_PATH, O_CREAT | O_WRONLY | O_TRUNC, 0644);
 	if (heredoc_fd < 0)
@@ -112,7 +113,7 @@ t_pipeline	parse_args(int argc, char **argv)
 	else
 		pipeline.infile_path = argv[1];
 	argv += 2;
-	pipeline.cmds = malloc(sizeof(*pipeline.cmds) * (argc - 1));
+	pipeline.cmds = malloc(sizeof(*pipeline.cmds) * (size_t)(argc - 1));
 	pipeline.outfile_path = argv[argc - 3];
 	argv[argc - 3] = NULL;
 	while (--argc >= 1)
@@ -315,7 +316,7 @@ void	pipexecve(t_pipeline *pipeline, int (*fds)[2][2], int *n)
 
 void	pipex(t_pipeline pipeline)
 {
-	int		wstatus;
+	/* int		wstatus; */
 	int		fds[2][2];
 	int		n;
 
