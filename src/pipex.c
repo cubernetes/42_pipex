@@ -6,7 +6,7 @@
 /*   By: tosuman <timo42@proton.me>                 +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/12/05 02:14:40 by tosuman           #+#    #+#             */
-/*   Updated: 2023/12/06 11:47:30 by tosuman          ###   ########.fr       */
+/*   Updated: 2023/12/07 20:28:04 by tosuman          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,6 +34,7 @@ typedef struct s_pipeline
 	int		in_fd;
 	int		append;
 	char	*heredoc_delim;
+	size_t	n_cmds;
 }			t_pipeline;
 
 void	finalize_pipeline(t_pipeline *pipeline);
@@ -116,6 +117,7 @@ t_pipeline	parse_args(int argc, char **argv)
 	pipeline.cmds = malloc(sizeof(*pipeline.cmds) * (size_t)(argc - 1));
 	pipeline.outfile_path = argv[argc - 3];
 	argv[argc - 3] = NULL;
+	pipeline.n_cmds = (size_t)argc - 3;
 	while (--argc >= 1)
 		pipeline.cmds[argc - 1] = argv[argc - 1];
 	return (pipeline);
@@ -131,6 +133,7 @@ void	print_pipeline(t_pipeline pipeline)
 	ft_printf("outfile:                     %s\n", pipeline.outfile_path);
 	ft_printf("outfile fd:                  %d\n", pipeline.out_fd);
 	ft_printf("append to outfile:           %d\n", pipeline.append);
+	ft_printf("number of commands:          %d\n", pipeline.n_cmds);
 }
 
 int	open_input(t_pipeline *pipeline)
@@ -260,7 +263,7 @@ char	*which(char *program, t_pipeline pipeline)
 	{
 		ft_dprintf(2, "%s: %s: %s\n", pipeline.pipex_name, program,
 			"No such file or directory");
-		(finalize_pipeline(&pipeline), exit(3));
+		(finalize_pipeline(&pipeline), exit(127));
 	}
 	full_path = search_executable(program, path_parts);
 	free_strarr(path_parts);
@@ -268,7 +271,7 @@ char	*which(char *program, t_pipeline pipeline)
 	{
 		ft_dprintf(2, "%s: %s: %s\n", pipeline.pipex_name, program,
 			"command not found");
-		(finalize_pipeline(&pipeline), exit(4));
+		(finalize_pipeline(&pipeline), exit(127));
 	}
 	return (full_path);
 }
@@ -288,17 +291,20 @@ void	execute_child(t_pipeline *pipeline, int (*fds)[2][2], int *n)
 		dup2(pipeline->out_fd, STDOUT_FILENO);
 	else
 		dup2((*fds)[*n & 1][1], STDOUT_FILENO);
+	(close(pipeline->in_fd), close(pipeline->out_fd));
 	(close((*fds)[*n & 1][0]), close((*fds)[*n & 1][1]));
 	(close((*fds)[(*n + 1) & 1][0]), close((*fds)[(*n + 1) & 1][1]));
 	if (execve(path, av, pipeline->envp) < 0)
 		exit(5);
 }
 
-void	pipexecve(t_pipeline *pipeline, int (*fds)[2][2], int *n)
+pid_t	*pipexecve(t_pipeline *pipeline, int (*fds)[2][2], int *n)
 {
 	int		pid;
+	pid_t	*pids;
 
 	*n = 0;
+	pids = malloc(sizeof(*pids) * (pipeline->n_cmds + 1));
 	(pipe((*fds)[*n & 1]), pipe((*fds)[(*n + 1) & 1]));
 	while (++*n && *pipeline->cmds)
 	{
@@ -310,31 +316,53 @@ void	pipexecve(t_pipeline *pipeline, int (*fds)[2][2], int *n)
 			pipeline->pipex_name, "error closing file descriptor"))
 			exit(7);
 		pipe((*fds)[(*n + 1) & 1]);
+		/* ft_printf("in while: pids[%d] = %d\n", *n - 1, pid); */
+		pids[*n - 1] = pid;
 		++pipeline->cmds;
 	}
+	/* ft_printf("pids[%d] = %d\n", *n - 1, -1); */
+	pids[*n - 1] = -1;
+	return (pids);
 }
 
-void	pipex(t_pipeline pipeline)
+int	pipex(t_pipeline pipeline)
 {
-	/* int		wstatus; */
 	int		fds[2][2];
 	int		n;
+	int		status;
+	pid_t	*pids;
 
-	pipexecve(&pipeline, &fds, &n);
+	pids = pipexecve(&pipeline, &fds, &n);
 	(close(pipeline.in_fd), close(pipeline.out_fd));
 	(close(fds[n & 1][0]), close(fds[n & 1][1]));
 	(close(fds[(n + 1) & 1][0]), close(fds[(n + 1) & 1][1]));
-	/* if (waitpid(pid, &wstatus, 0) < 0) */
-		/* (ft_dprintf(2, "%s: %d: %s: %s\n", pipeline.pipex_name, wstatus, */
-				/* "error in child process", *pipeline.cmds), exit(6)); */
+	status = 0;
+	while (pipeline.n_cmds--)
+	{
+		int result_of_waitpid = waitpid(*pids, pids, 0);
+		if (result_of_waitpid != -1)
+		{
+			int result_of_wifexited = WIFEXITED(*pids);
+			if (result_of_wifexited)
+				status = WEXITSTATUS(*pids);
+		}
+		else
+		{
+			(ft_dprintf(2, "%s: %d: %s: %s\n", pipeline.pipex_name, status,
+					"error in child process", *pipeline.cmds), exit(status));
+		}
+	}
+	free(pids);
+	return (status);
 }
 
 int	main(int argc, char **argv, char **envp)
 {
 	t_pipeline	pipeline;
+	int			status;
 
 	initialize_pipeline(argc, argv, envp, &pipeline);
-	pipex(pipeline);
+	status = pipex(pipeline);
 	finalize_pipeline(&pipeline);
-	return (0);
+	return (status);
 }
