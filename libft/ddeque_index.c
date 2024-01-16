@@ -1,37 +1,38 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   deque_pop_bottom.c                                 :+:      :+:    :+:   */
+/*   ddeque_index.c                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: tischmid <tischmid@student.42berlin.de>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2023/11/05 01:44:47 by tischmid          #+#    #+#             */
-/*   Updated: 2024/01/15 17:52:02 by tosuman          ###   ########.fr       */
+/*   Created: 2023/11/22 14:38:41 by tischmid          #+#    #+#             */
+/*   Updated: 2024/01/15 15:44:10 by tosuman          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "libft.h"
 
-t_deque_node	*deque_pop_bottom(t_deque *deque)
+/* cmp must return 0 if values are not equal */
+int	ddeque_index(t_ddeque *ddeque, void *data, int (cmp)(void *, void *))
 {
-	t_deque_node	*head;
-	t_deque_node	*prev;
-	t_deque_node	*prev_prev;
+	t_ddeque_node	*orig_head;
+	t_ddeque_node	*head;
+	int				idx;
 
-	head = deque->head;
+	orig_head = ddeque->head;
+	head = orig_head;
 	if (!head)
-		return (NULL);
-	prev = deque->head->prev;
-	prev_prev = prev->prev;
-	if (head == head->next)
-		deque->head = NULL;
-	else
+		return (-1);
+	if (cmp(head->data, data))
+		return (0);
+	head = head->next;
+	idx = 1;
+	while (head != orig_head)
 	{
-		deque->head->prev = prev_prev;
-		prev_prev->next = deque->head;
+		if (cmp(head->data, data))
+			return (idx);
+		++idx;
+		head = head->next;
 	}
-	prev->next = NULL;
-	prev->prev = NULL;
-	deque->size -= 1;
-	return (prev);
+	return (-1);
 }

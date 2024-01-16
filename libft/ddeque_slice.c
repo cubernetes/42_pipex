@@ -1,18 +1,19 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   deque_slice.c                                      :+:      :+:    :+:   */
+/*   ddeque_slice.c                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: tischmid <tischmid@student.42berlin.de>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/22 14:39:06 by tischmid          #+#    #+#             */
-/*   Updated: 2024/01/16 10:31:07 by tosuman          ###   ########.fr       */
+/*   Updated: 2024/01/16 10:38:44 by tosuman          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "libft.h"
 #include <stdlib.h>
 
+/* also determines whether to return early */
 static int	calculate_bounds(int *start, int *end, int *step, int *size)
 {
 	int	orig_start;
@@ -31,22 +32,22 @@ static int	calculate_bounds(int *start, int *end, int *step, int *size)
 	return (0);
 }
 
-t_deque	*deque_slice(t_deque *deque, int start, int end, int step)
+t_ddeque	*ddeque_slice(t_ddeque *ddeque, int start, int end, int step)
 {
-	t_deque_node	*head;
-	t_deque			*slice;
+	t_ddeque_node	*head;
+	t_ddeque		*slice;
 	int				size;
 
-	slice = deque_init();
-	size = (int)deque->size;
+	slice = ddeque_init();
+	size = (int)ddeque->size;
 	if (calculate_bounds(&start, &end, &step, &size))
 		return (slice);
-	(free(NULL), head = deque->head, size = start);
+	(free(NULL), head = ddeque->head, size = start);
 	while (size--)
 		head = head->next;
 	while ((step > 0 && start < end) || (step < 0 && start > end))
 	{
-		deque_push_value_bottom(slice, head->data);
+		ddeque_push_value_bottom(slice, head->data);
 		size = (int)ft_abs(step);
 		while (size--)
 		{

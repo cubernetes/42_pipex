@@ -1,23 +1,24 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   ft_putstr.c                                        :+:      :+:    :+:   */
+/*   ddeque_extend_free.c                               :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: tischmid <tischmid@student.42berlin.de>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2023/11/22 15:05:53 by tischmid          #+#    #+#             */
-/*   Updated: 2023/11/22 15:05:54 by tischmid         ###   ########.fr       */
+/*   Created: 2023/11/22 14:40:27 by tischmid          #+#    #+#             */
+/*   Updated: 2024/01/15 15:49:20 by tosuman          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "libft.h"
 
-int	ft_putstr(char *s)
+void	ddeque_extend_free(t_ddeque *ddeque_a, t_ddeque *ddeque_b,
+		void (free_data)(void *))
 {
-	int	i;
-
-	i = 0;
-	while (*s && ft_putchar(*s++))
-		++i;
-	return (i);
+	while (ddeque_b->head)
+	{
+		ddeque_push_node_bottom(ddeque_a, ddeque_pop_top(ddeque_b));
+		ddeque_a->size += 1;
+	}
+	ddeque_free(ddeque_b, free_data);
 }

@@ -1,23 +1,31 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   ft_putstr.c                                        :+:      :+:    :+:   */
+/*   ddeque_print.c                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: tischmid <tischmid@student.42berlin.de>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2023/11/22 15:05:53 by tischmid          #+#    #+#             */
-/*   Updated: 2023/11/22 15:05:54 by tischmid         ###   ########.fr       */
+/*   Created: 2023/11/22 14:37:38 by tischmid          #+#    #+#             */
+/*   Updated: 2024/01/15 15:41:02 by tosuman          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "libft.h"
 
-int	ft_putstr(char *s)
+void	ddeque_print(t_ddeque *ddeque, void (print)(void *data, int first))
 {
-	int	i;
+	t_ddeque_node	*head;
+	t_ddeque_node	*orig_head;
 
-	i = 0;
-	while (*s && ft_putchar(*s++))
-		++i;
-	return (i);
+	head = ddeque->head;
+	orig_head = head;
+	if (!head && ft_printf("Empty ddeque.\n"))
+		return ;
+	print(head->data, 1);
+	while (head->next != orig_head)
+	{
+		print(head->next->data, 0);
+		head = head->next;
+	}
+	ft_printf("\n");
 }

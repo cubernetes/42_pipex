@@ -1,23 +1,26 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   ft_putstr.c                                        :+:      :+:    :+:   */
+/*   ddeque_init.c                                      :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: tischmid <tischmid@student.42berlin.de>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2023/11/22 15:05:53 by tischmid          #+#    #+#             */
-/*   Updated: 2023/11/22 15:05:54 by tischmid         ###   ########.fr       */
+/*   Created: 2023/11/22 14:36:56 by tischmid          #+#    #+#             */
+/*   Updated: 2024/01/15 13:22:53 by tosuman          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "libft.h"
+#include <stdlib.h>
 
-int	ft_putstr(char *s)
+t_ddeque	*ddeque_init(void)
 {
-	int	i;
+	t_ddeque	*deque;
 
-	i = 0;
-	while (*s && ft_putchar(*s++))
-		++i;
-	return (i);
+	deque = malloc(sizeof(*deque));
+	if (!deque)
+		return (NULL);
+	deque->head = NULL;
+	deque->size = 0;
+	return (deque);
 }

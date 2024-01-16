@@ -6,7 +6,7 @@
 /*   By: tischmid <tischmid@student.42berlin.de>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/22 14:42:03 by tischmid          #+#    #+#             */
-/*   Updated: 2023/11/22 14:42:08 by tischmid         ###   ########.fr       */
+/*   Updated: 2024/01/15 21:41:31 by tosuman          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,8 @@
 
 void	deque_push_node_bottom(t_deque *deque, t_deque_node *node)
 {
+	if (!node)
+		return ;
 	if (deque->head)
 	{
 		node->next = deque->head;

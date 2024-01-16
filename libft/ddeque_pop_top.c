@@ -1,23 +1,38 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   ft_putstr.c                                        :+:      :+:    :+:   */
+/*   ddeque_pop_top.c                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: tischmid <tischmid@student.42berlin.de>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2023/11/22 15:05:53 by tischmid          #+#    #+#             */
-/*   Updated: 2023/11/22 15:05:54 by tischmid         ###   ########.fr       */
+/*   Created: 2023/11/22 14:41:09 by tischmid          #+#    #+#             */
+/*   Updated: 2024/01/15 17:52:14 by tosuman          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "libft.h"
 
-int	ft_putstr(char *s)
+t_ddeque_node	*ddeque_pop_top(t_ddeque *ddeque)
 {
-	int	i;
+	t_ddeque_node	*prev;
+	t_ddeque_node	*head;
+	t_ddeque_node	*next;
 
-	i = 0;
-	while (*s && ft_putchar(*s++))
-		++i;
-	return (i);
+	head = ddeque->head;
+	if (!head)
+		return (NULL);
+	prev = head->prev;
+	next = head->next;
+	if (head == head->next)
+		ddeque->head = NULL;
+	else
+	{
+		ddeque->head = next;
+		next->prev = prev;
+		prev->next = next;
+	}
+	head->next = NULL;
+	head->prev = NULL;
+	ddeque->size -= 1;
+	return (head);
 }

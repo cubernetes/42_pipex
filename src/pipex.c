@@ -6,7 +6,7 @@
 /*   By: tosuman <timo42@proton.me>                 +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/12/05 02:14:40 by tosuman           #+#    #+#             */
-/*   Updated: 2023/12/07 20:28:04 by tosuman          ###   ########.fr       */
+/*   Updated: 2024/01/16 23:07:48 by tosuman          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,6 +22,7 @@
 
 #define HEREDOC_PATH "/tmp/.pipex_heredoc_unlink_me"
 #define PS2 "> "
+#define HEREDOC_QUALIFIER "here_doc"
 
 typedef struct s_pipeline
 {
@@ -33,6 +34,8 @@ typedef struct s_pipeline
 	int		out_fd;
 	int		in_fd;
 	int		append;
+	int		inerrno;
+	int		outerrno;
 	char	*heredoc_delim;
 	size_t	n_cmds;
 }			t_pipeline;
@@ -59,16 +62,19 @@ void	help_and_exit(int argc, char **argv, int fd)
 	exit(1);
 }
 
-void	file_error(t_pipeline *pipeline, char *file_path)
+void	file_error(t_pipeline *pipeline, char *file_path, int exit_code)
 {
 	ft_dprintf(2, "%s: %s: %s\n",
 		pipeline->pipex_name,
 		file_path,
-		strerror(errno)),
-	finalize_pipeline(pipeline);
-	exit(2);
+		strerror(errno));
+	(void)exit_code;
+	/* finalize_pipeline(pipeline); */
+	/* exit(exit_code); */
 }
 
+/* if we were allowed to use isatty, we would not print PS2 in certain cases */
+/* last get_next_line call (that must fail) is to clear the static buffer */
 char	*create_heredoc_file(t_pipeline *pipeline)
 {
 	char	*line;
@@ -77,7 +83,7 @@ char	*create_heredoc_file(t_pipeline *pipeline)
 
 	heredoc_fd = open(HEREDOC_PATH, O_CREAT | O_WRONLY | O_TRUNC, 0644);
 	if (heredoc_fd < 0)
-		file_error(pipeline, HEREDOC_PATH);
+		file_error(pipeline, HEREDOC_PATH, 8);
 	line = NULL;
 	heredoc_sep_len = ft_strlen(pipeline->heredoc_delim);
 	while (!line || ft_strncmp(line, pipeline->heredoc_delim, heredoc_sep_len))
@@ -103,7 +109,7 @@ t_pipeline	parse_args(int argc, char **argv)
 	pipeline.pipex_name = argv[0];
 	pipeline.append = 0;
 	pipeline.heredoc_delim = NULL;
-	if (!ft_strcmp(argv[1], "here_doc"))
+	if (ft_streq(argv[1], HEREDOC_QUALIFIER))
 	{
 		pipeline.append = 1;
 		pipeline.heredoc_delim = argv[2];
@@ -125,22 +131,28 @@ t_pipeline	parse_args(int argc, char **argv)
 
 void	print_pipeline(t_pipeline pipeline)
 {
-	ft_printf("pipex name:                  %s\n", pipeline.pipex_name);
-	ft_printf("infile:                      %s\n", pipeline.infile_path);
-	ft_printf("infile fd:                   %d\n", pipeline.in_fd);
+	int	i;
+
+	ft_printf("pipex name:         %s\n", pipeline.pipex_name);
+	ft_printf("infile:             %s\n", pipeline.infile_path);
+	ft_printf("infile fd:          %d\n", pipeline.in_fd);
+	i = 0;
 	while (*pipeline.cmds)
-		ft_printf("cmd:                         %s\n", *pipeline.cmds++);
-	ft_printf("outfile:                     %s\n", pipeline.outfile_path);
-	ft_printf("outfile fd:                  %d\n", pipeline.out_fd);
-	ft_printf("append to outfile:           %d\n", pipeline.append);
-	ft_printf("number of commands:          %d\n", pipeline.n_cmds);
+		ft_printf("cmd%d:               %s\n", ++i, *pipeline.cmds++);
+	ft_printf("outfile:            %s\n", pipeline.outfile_path);
+	ft_printf("outfile fd:         %d\n", pipeline.out_fd);
+	ft_printf("append to outfile:  %d\n", pipeline.append);
+	ft_printf("number of commands: %d\n", pipeline.n_cmds);
 }
 
 int	open_input(t_pipeline *pipeline)
 {
 	if (!access(pipeline->infile_path, R_OK))
 		return (open(pipeline->infile_path, O_RDONLY));
-	file_error(pipeline, pipeline->infile_path);
+	file_error(pipeline, pipeline->infile_path, 1);
+	ft_printf("SETTING\n");
+	pipeline->inerrno = 1;
+	ft_printf("AND THE VALUE IS: %d\n", pipeline->inerrno);
 	return (-1);
 }
 
@@ -202,7 +214,8 @@ int	open_output(t_pipeline *pipeline)
 					O_CREAT | O_WRONLY | O_TRUNC, 0644));
 	}
 	free(dirname);
-	file_error(pipeline, pipeline->outfile_path);
+	file_error(pipeline, pipeline->outfile_path, 1);
+	pipeline->outerrno = 1;
 	return (-1);
 }
 
@@ -219,12 +232,13 @@ void	initialize_pipeline(int argc, char **argv,
 		char **envp, t_pipeline *pipeline)
 {
 	*pipeline = parse_args(argc, argv);
-	pipeline->in_fd = 0;
-	pipeline->out_fd = 1;
+	/* pipeline->in_fd = 0; */
+	/* pipeline->out_fd = 1; */
+	pipeline->inerrno = 0;
+	pipeline->outerrno = 0;
 	pipeline->in_fd = open_input(pipeline);
 	pipeline->out_fd = open_output(pipeline);
 	pipeline->envp = envp;
-	/* print_pipeline(*pipeline); */
 }
 
 static char	*search_executable(char *program, char **path_parts)
@@ -247,7 +261,7 @@ static char	*search_executable(char *program, char **path_parts)
 	return (full_path);
 }
 
-char	*which(char *program, t_pipeline pipeline)
+char	*which(char **av, t_pipeline pipeline)
 {
 	char	**path_parts;
 	char	*full_path;
@@ -261,28 +275,29 @@ char	*which(char *program, t_pipeline pipeline)
 	}
 	if (!path_parts)
 	{
-		ft_dprintf(2, "%s: %s: %s\n", pipeline.pipex_name, program,
+		ft_dprintf(2, "%s: %s: %s\n", pipeline.pipex_name, av[0],
 			"No such file or directory");
-		(finalize_pipeline(&pipeline), exit(127));
+		(finalize_pipeline(&pipeline), free_strarr(av), exit(127));
 	}
-	full_path = search_executable(program, path_parts);
+	full_path = search_executable(av[0], path_parts);
 	free_strarr(path_parts);
 	if (!full_path)
 	{
-		ft_dprintf(2, "%s: %s: %s\n", pipeline.pipex_name, program,
+		ft_dprintf(2, "%s: %s: %s\n", pipeline.pipex_name, av[0],
 			"command not found");
-		(finalize_pipeline(&pipeline), exit(127));
+		(finalize_pipeline(&pipeline), free_strarr(av), exit(127));
 	}
 	return (full_path);
 }
 
+/* no command parsing is done save for spliting by spaces (quotes don't work) */
 void	execute_child(t_pipeline *pipeline, int (*fds)[2][2], int *n)
 {
 	char	**av;
 	char	*path;
 
 	av = ft_split(*pipeline->cmds, ' ');
-	path = which(av[0], *pipeline);
+	path = which(av, *pipeline);
 	if (*n == 1)
 		dup2(pipeline->in_fd, STDIN_FILENO);
 	else
@@ -308,52 +323,54 @@ pid_t	*pipexecve(t_pipeline *pipeline, int (*fds)[2][2], int *n)
 	(pipe((*fds)[*n & 1]), pipe((*fds)[(*n + 1) & 1]));
 	while (++*n && *pipeline->cmds)
 	{
+		if ((*n == 1 && pipeline->inerrno) || (!pipeline->cmds[1] && pipeline->outerrno))
+			continue ;
 		pid = fork();
-		if (pid == 0)
+		if (pid == 0 && (free(pids), 1))
 			execute_child(pipeline, fds, n);
 		if ((close((*fds)[(*n + 1) & 1][0]) < 0 || close((*fds)[(*n + 1)
 			& 1][1]) < 0) && ft_dprintf(2, "%s: %s: %s\n",
 			pipeline->pipex_name, "error closing file descriptor"))
 			exit(7);
 		pipe((*fds)[(*n + 1) & 1]);
-		/* ft_printf("in while: pids[%d] = %d\n", *n - 1, pid); */
 		pids[*n - 1] = pid;
 		++pipeline->cmds;
 	}
-	/* ft_printf("pids[%d] = %d\n", *n - 1, -1); */
 	pids[*n - 1] = -1;
 	return (pids);
 }
 
 int	pipex(t_pipeline pipeline)
 {
-	int		fds[2][2];
-	int		n;
-	int		status;
 	pid_t	*pids;
+	int		fds[2][2];
+	int		status;
+	int		n;
+	int		val;
 
 	pids = pipexecve(&pipeline, &fds, &n);
 	(close(pipeline.in_fd), close(pipeline.out_fd));
-	(close(fds[n & 1][0]), close(fds[n & 1][1]));
-	(close(fds[(n + 1) & 1][0]), close(fds[(n + 1) & 1][1]));
-	status = 0;
-	while (pipeline.n_cmds--)
+	(close(fds[0][0]), close(fds[0][1]), close(fds[1][0]), close(fds[1][1]));
+	(free(NULL), status = 0, n = -1);
+	while (++n < (int)pipeline.n_cmds)
 	{
-		int result_of_waitpid = waitpid(*pids, pids, 0);
-		if (result_of_waitpid != -1)
+		ft_printf("LOOP\n");
+		if (n == 0 && pipeline.inerrno && ft_printf("YES SETTING THE STATUS\n"))
+			status = pipeline.inerrno;
+		else if (n == (int)pipeline.n_cmds - 1 && pipeline.outerrno)
+			status = pipeline.outerrno;
+		else if (ft_printf("WAITING: %d, %d\n", pids[n], pipeline.inerrno) && waitpid(pids[n], pids, 0) != -1 && ft_printf("WAITING DONE\n"))
 		{
-			int result_of_wifexited = WIFEXITED(*pids);
-			if (result_of_wifexited)
-				status = WEXITSTATUS(*pids);
+			ft_printf("DID IT (n is %d of %d)?\n", n + 1, pipeline.n_cmds);
+			val = WIFEXITED(pids[n]);
+			if (ft_printf("EXITED NORMALLY?: %d\n", val) && val && ft_printf("YES IT DID\n"))
+				status = WEXITSTATUS(pids[n]);
 		}
 		else
-		{
 			(ft_dprintf(2, "%s: %d: %s: %s\n", pipeline.pipex_name, status,
-					"error in child process", *pipeline.cmds), exit(status));
-		}
+					"error in child process", pipeline.cmds[n - (int)pipeline.n_cmds]), exit(status));
 	}
-	free(pids);
-	return (status);
+	return (free(pids), status);
 }
 
 int	main(int argc, char **argv, char **envp)

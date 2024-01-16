@@ -6,7 +6,7 @@
 #    By: tischmid <tischmid@student.42berlin.de>    +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2023/11/22 15:09:11 by tischmid          #+#    #+#              #
-#    Updated: 2023/12/05 04:56:11 by tosuman          ###   ########.fr        #
+#    Updated: 2024/01/16 17:00:55 by tosuman          ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -24,7 +24,7 @@ INCDIR = .
 
 unexport _SRC
 _SRC += ft_atoi.c
-_SRC += ft_atoi.c
+_SRC += ft_atoi_status.c
 _SRC += ft_atof.c
 _SRC += ft_bzero.c
 _SRC += ft_calloc.c
@@ -45,6 +45,7 @@ _SRC += ft_strlcpy.c
 _SRC += ft_strlen.c
 _SRC += ft_strncmp.c
 _SRC += ft_strcmp.c
+_SRC += ft_streq.c
 _SRC += ft_strnstr.c
 _SRC += ft_strrchr.c
 _SRC += ft_tolower.c
@@ -110,6 +111,26 @@ _SRC += deque_push_value_bottom.c
 _SRC += deque_push_node_top.c
 _SRC += deque_push_value_top.c
 _SRC += deque_equal.c
+_SRC += deque_argmax.c
+
+_SRC += ddeque_init.c
+_SRC += ddeque_free.c
+_SRC += ddeque_print.c
+_SRC += ddeque_index.c
+_SRC += ddeque_slice.c
+_SRC += ddeque_sort.c
+_SRC += ddeque_shallow_copy.c
+_SRC += ddeque_size.c
+_SRC += ddeque_extend_free.c
+_SRC += ddeque_swap.c
+_SRC += ddeque_rotate.c
+_SRC += ddeque_pop_top.c
+_SRC += ddeque_pop_bottom.c
+_SRC += ddeque_push_node_bottom.c
+_SRC += ddeque_push_value_bottom.c
+_SRC += ddeque_push_node_top.c
+_SRC += ddeque_push_value_top.c
+_SRC += ddeque_equal.c
 
 _SRC += cmp_int_desc.c
 _SRC += cmp_int_asc.c
