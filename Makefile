@@ -6,7 +6,7 @@
 #    By: tischmid <tischmid@student.42berlin.de>    +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2023/11/22 15:02:16 by tischmid          #+#    #+#              #
-#    Updated: 2023/12/07 20:07:23 by tosuman          ###   ########.fr        #
+#    Updated: 2024/01/17 19:18:26 by tosuman          ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -52,6 +52,8 @@ $(OBJ): $(INCLUDE) | $(OBJDIR)
 $(OBJDIR):
 	mkdir -p $(OBJDIR)
 
+bonus: $(NAME)
+
 clean:
 	$(MAKE) -C $(LIBFT_DIR) $@
 	$(RM) $(OBJ)
@@ -63,4 +65,4 @@ fclean: clean
 
 re: fclean all
 
-.PHONY: re fclean clean all
+.PHONY: re fclean clean all bonus
