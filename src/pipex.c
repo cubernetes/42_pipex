@@ -6,7 +6,7 @@
 /*   By: tosuman <timo42@proton.me>                 +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/12/05 02:14:40 by tosuman           #+#    #+#             */
-/*   Updated: 2024/01/17 19:12:08 by tosuman          ###   ########.fr       */
+/*   Updated: 2024/01/17 20:12:36 by tosuman          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -368,7 +368,7 @@ int	pipex(t_pipeline pipeline)
 		close(pipeline.out_fd);
 	(close(fds[0][0]), close(fds[0][1]), close(fds[1][0]), close(fds[1][1]));
 	(free(NULL), status = 0, n = -1);
-	sleep(1);
+	/* sleep(1); */
 	/* printf("[\033[32mDEBUG\033[m] \t\033[41;30m STATUS STARTS WITH %d \033[m\n", status); */
 	while (++n < (int)pipeline.n_cmds)
 	{
