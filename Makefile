@@ -6,7 +6,7 @@
 #    By: tischmid <tischmid@student.42berlin.de>    +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2023/11/22 15:02:16 by tischmid          #+#    #+#              #
-#    Updated: 2024/01/17 21:03:29 by tosuman          ###   ########.fr        #
+#    Updated: 2024/01/17 21:18:45 by tosuman          ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -21,7 +21,7 @@ NAME         = pipex
 LIBFT        = libft.a
 LIBFT_       = $(patsubst lib%,%,$(patsubst %.a,%,$(LIBFT)))
 
-_SRC         = pipex.c
+_SRC         = error_handling.c init.c pipex.c utils.c
 _OBJ         = $(_SRC:.c=.o)
 _HEADERS	 = pipex.h
 LIBFT_DIR    = ./libft
@@ -34,7 +34,7 @@ OBJ          = $(addprefix $(OBJDIR)/,$(_OBJ))
 INCLUDE      = $(addprefix $(INCLUDEDIR)/,$(_HEADERS))
 
 CC           = cc
-CFLAGS       = -g3 -O0 -Wall -Wextra -Werror \
+CFLAGS       = -O3 -Wall -Wextra -Werror \
 		       -std=c89 -pedantic -Wconversion
 CPPFLAGS     = -I$(LIBFT_DIR) -I$(INCLUDEDIR)
 LDFLAGS      = -L$(LIBFT_DIR)
