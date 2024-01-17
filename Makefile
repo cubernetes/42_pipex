@@ -6,11 +6,16 @@
 #    By: tischmid <tischmid@student.42berlin.de>    +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2023/11/22 15:02:16 by tischmid          #+#    #+#              #
-#    Updated: 2024/01/17 19:18:26 by tosuman          ###   ########.fr        #
+#    Updated: 2024/01/17 21:03:29 by tosuman          ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
 # Makefile for Linux systems
+# libft get_next_line BUFFER_SIZE kept at 1 because on at least on occasion
+# I had still reachable leaks since the static buffer was not cleared (which
+# isn't really a problem save for the perfectionist). For some reason
+# it started to work again with different buffer sizes, but to play it safe,
+# I'll keep it at 1.
 
 NAME         = pipex
 LIBFT        = libft.a

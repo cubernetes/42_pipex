@@ -6,11 +6,12 @@
 /*   By: tosuman <timo42@proton.me>                 +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/12/05 02:14:40 by tosuman           #+#    #+#             */
-/*   Updated: 2024/01/17 20:12:36 by tosuman          ###   ########.fr       */
+/*   Updated: 2024/01/17 21:04:18 by tosuman          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../libft/libft.h"
+#include "../include/pipex.h"
 #include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
@@ -19,26 +20,6 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <sys/wait.h>
-
-#define HEREDOC_PATH "/tmp/.pipex_heredoc_unlink_me"
-#define PS2 "> "
-#define HEREDOC_QUALIFIER "here_doc"
-
-typedef struct s_pipeline
-{
-	char	**cmds;
-	char	**envp;
-	char	*pipex_name;
-	char	*outfile_path;
-	char	*infile_path;
-	int		out_fd;
-	int		in_fd;
-	int		append;
-	int		inerrno;
-	int		outerrno;
-	char	*heredoc_delim;
-	size_t	n_cmds;
-}			t_pipeline;
 
 void	finalize_pipeline(t_pipeline *pipeline);
 
@@ -57,8 +38,8 @@ void	help_and_exit(int argc, char **argv, int fd)
 	ft_dprintf(fd, "\n");
 	ft_dprintf(fd, "EXAMPLES:\n");
 	ft_dprintf(fd, "    %s file1 sort nl file2\n", program);
-	ft_dprintf(fd, "    printf 'abc\\nline2\\nwhatever' | %s /dev/stdin sort nl "
-		"'sed s/\\s/_/g' /dev/stdout\n", program);
+	ft_dprintf(fd, "    printf 'abc\\nline2\\nwhatever' | %s /dev/stdin sort nl"
+		" 'sed s/\\s/_/g' /dev/stdout\n", program);
 	exit(1);
 }
 
@@ -69,9 +50,9 @@ void	file_error(t_pipeline *pipeline, char *file_path, int exit_code)
 		file_path,
 		strerror(errno));
 	(void)exit_code;
-	/* finalize_pipeline(pipeline); */
-	/* exit(exit_code); */
 }
+/* finalize_pipeline(pipeline); */
+/* exit(exit_code); */
 
 /* if we were allowed to use isatty, we would not print PS2 in certain cases */
 /* last get_next_line call (that must fail) is to clear the static buffer */
@@ -95,10 +76,10 @@ char	*create_heredoc_file(t_pipeline *pipeline)
 		line = get_next_line(0);
 	}
 	free(line);
-	close(0);
-	get_next_line(0);
 	return (HEREDOC_PATH);
 }
+/* close(0); */
+/* get_next_line(0); */
 
 t_pipeline	parse_args(int argc, char **argv)
 {
@@ -188,12 +169,9 @@ char	*ft_dirname(char *path)
 	while (--len)
 	{
 		tmp = ft_strjoin(dirname, *split_path++);
-		free(dirname);
-		dirname = ft_strjoin(tmp, "/");
-		free(tmp);
+		(free(dirname), dirname = ft_strjoin(tmp, "/"), free(tmp));
 	}
-	free_strarr(orig_split_path);
-	return (dirname);
+	return (free_strarr(orig_split_path), dirname);
 }
 
 int	open_output(t_pipeline *pipeline)
@@ -201,7 +179,8 @@ int	open_output(t_pipeline *pipeline)
 	char	*dirname;
 
 	dirname = ft_dirname(pipeline->outfile_path);
-	if (dirname && (!access(pipeline->outfile_path, W_OK) || !access(dirname, W_OK)))
+	if (dirname && (!access(pipeline->outfile_path, W_OK)
+			|| !access(dirname, W_OK)))
 	{
 		free(dirname);
 		if (pipeline->append)
@@ -232,8 +211,6 @@ void	initialize_pipeline(int argc, char **argv,
 		char **envp, t_pipeline *pipeline)
 {
 	*pipeline = parse_args(argc, argv);
-	/* pipeline->in_fd = 0; */
-	/* pipeline->out_fd = 1; */
 	pipeline->inerrno = 0;
 	pipeline->outerrno = 0;
 	pipeline->in_fd = open_input(pipeline);
@@ -293,6 +270,10 @@ char	*which(char **av, t_pipeline pipeline)
 }
 
 /* no command parsing is done save for spliting by spaces (quotes don't work) */
+/* printf("[\033[32mDEBUG\033[m] CMD \033[31m%s\033[m: "
+	"EXECVE'ing the following (pid: %d)\n", *nm, getpid()); */
+/* printf("[\033[32mDEBUG\033[m] CMD \033[31m%s\033[m: "
+	"%s, %s\n", *nm, path, av[1]); */
 void	execute_child(char **nm, t_pipeline *pipeline, int (*fds)[2][2], int *n)
 {
 	char	**av;
@@ -300,8 +281,6 @@ void	execute_child(char **nm, t_pipeline *pipeline, int (*fds)[2][2], int *n)
 
 	av = ft_split(*nm, ' ');
 	path = which(av, *pipeline);
-	/* printf("[\033[32mDEBUG\033[m] CMD \033[31m%s\033[m: EXECVE'ing the following (pid: %d)\n", *nm, getpid()); */
-	/* printf("[\033[32mDEBUG\033[m] CMD \033[31m%s\033[m: %s, %s\n", *nm, path, av[1]); */
 	if (*n == 1)
 		dup2(pipeline->in_fd, STDIN_FILENO);
 	else
@@ -320,6 +299,10 @@ void	execute_child(char **nm, t_pipeline *pipeline, int (*fds)[2][2], int *n)
 		exit(5);
 }
 
+/* printf("[\033[32mDEBUG\033[m] CMD \033[31m%s\033[m: CONTINUING\n",
+	*_cmds); */
+/* printf("[\033[32mDEBUG\033[m] CMD \033[31m%s\033[m: EXECVE'ing\n",
+	*_cmds); */
 pid_t	*pipexecve(t_pipeline *pipeline, int (*fds)[2][2], int *n)
 {
 	int		pid;
@@ -334,11 +317,7 @@ pid_t	*pipexecve(t_pipeline *pipeline, int (*fds)[2][2], int *n)
 	{
 		if ((*n == 1 && pipeline->inerrno) || (!_cmds[1]
 				&& pipeline->outerrno))
-		{
-			/* printf("[\033[32mDEBUG\033[m] CMD \033[31m%s\033[m: CONTINUING\n", *_cmds); */
 			continue ;
-		}
-		/* printf("[\033[32mDEBUG\033[m] CMD \033[31m%s\033[m: EXECVE'ing\n", *_cmds); */
 		pid = fork();
 		if (pid == 0 && (free(pids), 1))
 			execute_child(_cmds, pipeline, fds, n);
@@ -358,8 +337,6 @@ int	pipex(t_pipeline pipeline)
 	int		fds[2][2];
 	int		status;
 	int		n;
-	int		val;
-	/* int		val2; */
 
 	pids = pipexecve(&pipeline, &fds, &n);
 	if (pipeline.in_fd != -1)
@@ -368,33 +345,79 @@ int	pipex(t_pipeline pipeline)
 		close(pipeline.out_fd);
 	(close(fds[0][0]), close(fds[0][1]), close(fds[1][0]), close(fds[1][1]));
 	(free(NULL), status = 0, n = -1);
-	/* sleep(1); */
-	/* printf("[\033[32mDEBUG\033[m] \t\033[41;30m STATUS STARTS WITH %d \033[m\n", status); */
 	while (++n < (int)pipeline.n_cmds)
 	{
-		/* printf("[\033[32mDEBUG\033[m] LOOP for CMD: \033[31m%s\033[m\n", pipeline.cmds[n]); */
-		if (n == 0 && pipeline.inerrno /* && printf("[\033[32mDEBUG\033[m] \tFILE READ ERROR, \033[41;30m SETTING THE STATUS TO %d \033[m\n", pipeline.inerrno) */)
+		if (n == 0 && pipeline.inerrno)
 			status = pipeline.inerrno;
-		else if (n == (int)pipeline.n_cmds - 1 && pipeline.outerrno /* && printf("[\033[32mDEBUG\033[m] \tFILE WRITE ERROR, \033[41;30m SETTING THE STATUS TO %d \033[m\n", pipeline.outerrno) */)
+		else if (n == (int)pipeline.n_cmds - 1 && pipeline.outerrno)
 			status = pipeline.outerrno;
-		else if (/* printf("[\033[32mDEBUG\033[m] \tWAITING for PID %d...\n", pids[n]) && */ waitpid(pids[n], pids, 0) != -1 /* && printf("[\033[32mDEBUG\033[m] \tWAITING DONE\n") */)
+		else if (waitpid(pids[n], pids, 0) == -1)
+			(ft_dprintf(2, "%s: %d: %s: %s\n", pipeline.pipex_name, status,
+					"error in child process", pipeline.cmds[n]), exit(status));
+		else if (WIFEXITED(pids[n]))
+			status = WEXITSTATUS(pids[n]);
+	}
+	return (free(pids), status);
+}
+
+/* pipex with debug statements (printf, not ft_printf, for better buffering)*/
+/*
+int	pipex(t_pipeline pipeline)
+{
+	pid_t	*pids;
+	int		fds[2][2];
+	int		status;
+	int		n;
+	int		val;
+	int		val2;
+
+	pids = pipexecve(&pipeline, &fds, &n);
+	if (pipeline.in_fd != -1)
+		close(pipeline.in_fd);
+	if (pipeline.out_fd != -1)
+		close(pipeline.out_fd);
+	(close(fds[0][0]), close(fds[0][1]), close(fds[1][0]), close(fds[1][1]));
+	(free(NULL), status = 0, n = -1);
+	sleep(1);
+	printf("[\033[32mDEBUG\033[m] \t\033[41;30m STATUS STARTS WITH %d \033[m\n",
+		status);
+	while (++n < (int)pipeline.n_cmds)
+	{
+		printf("[\033[32mDEBUG\033[m] LOOP for CMD: \033[31m%s\033[m\n",
+			pipeline.cmds[n]);
+		if (n == 0 && pipeline.inerrno && printf("[\033[32mDEBUG\033[m] \tFILE "
+				"READ ERROR, \033[41;30m SETTING THE STATUS TO %d \033[m\n",
+				pipeline.inerrno))
+			status = pipeline.inerrno;
+		else if (n == (int)pipeline.n_cmds - 1 && pipeline.outerrno
+			&& printf("[\033[32mDEBUG\033[m] \tFILE WRITE ERROR, \033[41;30m "
+			"SETTING THE STATUS TO %d \033[m\n", pipeline.outerrno))
+			status = pipeline.outerrno;
+		else if (printf("[\033[32mDEBUG\033[m] \tWAITING for PID %d...\n",
+			pids[n]) && waitpid(pids[n], pids, 0) != -1
+			&& printf("[\033[32mDEBUG\033[m] \tWAITING DONE\n"))
 		{
-			/* printf("[\033[32mDEBUG\033[m] \tDID IT EXIT NORMALLY?: "); */
+			printf("[\033[32mDEBUG\033[m] \tDID IT EXIT NORMALLY?: ");
 			val = WIFEXITED(pids[n]);
-			if (val /* && printf("\033[42;30m YES (VALUE WAS %d)! \033[m\n", val) */)
+			if (val && printf("\033[42;30m YES (VALUE WAS %d)! \033[m\n", val))
 			{
 				status = WEXITSTATUS(pids[n]);
-				/* printf("[\033[32mDEBUG\033[m] \t SETTING THE STATUS TO %d \n", status); */
+				printf("[\033[32mDEBUG\033[m] \t SETTING THE STATUS TO %d \n",
+					status);
 			}
-			/* else */
-				/* printf("\033[41;30m NO (VALUE WAS %d) (NOT SETTING THE STATUS!) \033[m\n", val); */
-			/* printf("[\033[32mDEBUG\033[m] \tVALUE OF WEXITSTATUS(pids[n]) is this: %d\n", WEXITSTATUS(pids[n])); */
-			/* printf("[\033[32mDEBUG\033[m] \tAND DID IT RECEIVE A SIGNAL?: "); */
-			/* val2 = WIFSIGNALED(pids[n]); */
-			/* if (val2 && printf("\033[42;30m YES (VALUE WAS %d)! \033[m\n", val2)) */
-				/* printf("[\033[32mDEBUG\033[m] \tSIGNAL FOR PID %d WAS %d\n", pids[n], WTERMSIG(pids[n])); */
-			/* else */
-				/* printf("\033[41;30m NO (VALUE WAS %d) \033[m\n", val2); */
+			else
+				printf("\033[41;30m NO (VALUE WAS %d) (NOT SETTING THE "
+					"STATUS!) \033[m\n", val);
+			printf("[\033[32mDEBUG\033[m] \tVALUE OF WEXITSTATUS(pids[n]) is "
+				"this: %d\n", WEXITSTATUS(pids[n]));
+			printf("[\033[32mDEBUG\033[m] \tAND DID IT RECEIVE A SIGNAL?: ");
+			val2 = WIFSIGNALED(pids[n]);
+			if (val2 && printf("\033[42;30m YES (VALUE WAS %d)! \033[m\n",
+				val2))
+				printf("[\033[32mDEBUG\033[m] \tSIGNAL FOR PID %d WAS %d\n",
+					pids[n], WTERMSIG(pids[n]));
+			else
+				printf("\033[41;30m NO (VALUE WAS %d) \033[m\n", val2);
 		}
 		else
 			(ft_dprintf(2, "%s: %d: %s: %s\n", pipeline.pipex_name, status,
@@ -402,7 +425,10 @@ int	pipex(t_pipeline pipeline)
 	}
 	return (free(pids), status);
 }
+*/
 
+/* printf("[\033[32mDEBUG\033[m] FINAL EXIT STATUS: \033[41;30m %d \033[m\n",
+	status); */
 int	main(int argc, char **argv, char **envp)
 {
 	t_pipeline	pipeline;
@@ -411,6 +437,5 @@ int	main(int argc, char **argv, char **envp)
 	initialize_pipeline(argc, argv, envp, &pipeline);
 	status = pipex(pipeline);
 	finalize_pipeline(&pipeline);
-	/* printf("[\033[32mDEBUG\033[m] FINAL EXIT STATUS: \033[41;30m %d \033[m\n", status); */
 	return (status);
 }
