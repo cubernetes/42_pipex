@@ -6,14 +6,16 @@
 /*   By: tosuman <timo42@proton.me>                 +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/01/17 21:08:57 by tosuman           #+#    #+#             */
-/*   Updated: 2024/01/17 21:16:54 by tosuman          ###   ########.fr       */
+/*   Updated: 2024/01/20 15:00:04 by tosuman          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
+#define _POSIX_C_SOURCE 200809L
 #include "../include/pipex.h"
 #include "../libft/libft.h"
 #include <stdlib.h>
 #include <unistd.h>
+#include <fcntl.h>
 
 char	*ft_dirname(char *path)
 {
@@ -57,7 +59,8 @@ static char	*search_executable(char *program, char **path_parts)
 		path = ft_strjoin(*path_parts, "/");
 		full_path = ft_strjoin(path, program);
 		free(path);
-		if (!access(full_path, X_OK | R_OK | F_OK))
+		if (!access(full_path, X_OK | R_OK | F_OK)
+			&& open(full_path, O_DIRECTORY) == -1)
 			break ;
 		free(full_path);
 		full_path = NULL;
